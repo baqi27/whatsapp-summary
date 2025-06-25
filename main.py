@@ -11,12 +11,7 @@ from dotenv import load_dotenv
 # === WCZYTANIE ZMIENNYCH ŚRODOWISKOWYCH ===
 load_dotenv()
 
-from datetime import datetime
 
-with open("log_cron.txt", "a") as f:
-    f.write(f"CRON RUN: {datetime.now()}\n")
-
-print("CRON RUN:", datetime.now())
 
 
 EMAIL = os.getenv("EMAIL")
@@ -64,7 +59,7 @@ def fetch_recent_emails():
     mail = imaplib.IMAP4_SSL(IMAP_SERVER)
     mail.login(EMAIL, PASSWORD)
     mail.select("inbox")
-    date_since = (datetime.date.today() - datetime.timedelta(days=2)).strftime("%d-%b-%Y")
+    date_since = (datetime.date.today() - datetime.timedelta(days=3)).strftime("%d-%b-%Y")
     result, data = mail.search(None, f'(SINCE "{date_since}")')
     emails = []
 

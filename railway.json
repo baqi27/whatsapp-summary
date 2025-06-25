@@ -5,7 +5,7 @@
   "deploy": {
     "startCommand": "python main.py"
   },
-  "cron": [
+  "crons": [
     {
       "schedule": "*/5 * * * *",
       "command": "python main.py"

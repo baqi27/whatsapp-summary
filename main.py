@@ -11,6 +11,14 @@ from dotenv import load_dotenv
 # === WCZYTANIE ZMIENNYCH ŚRODOWISKOWYCH ===
 load_dotenv()
 
+from datetime import datetime
+
+with open("log_cron.txt", "a") as f:
+    f.write(f"CRON RUN: {datetime.now()}\n")
+
+print("CRON RUN:", datetime.now())
+
+
 EMAIL = os.getenv("EMAIL")
 PASSWORD = os.getenv("PASSWORD")
 IMAP_SERVER = 'imap.gmail.com'

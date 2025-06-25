@@ -59,7 +59,8 @@ def fetch_recent_emails():
     mail = imaplib.IMAP4_SSL(IMAP_SERVER)
     mail.login(EMAIL, PASSWORD)
     mail.select("inbox")
-    date_since = (datetime.date.today() - datetime.timedelta(days=3)).strftime("%d-%b-%Y")
+    date_since = (datetime.datetime.today() - datetime.timedelta(days=3)).strftime("%d-%b-%Y")
+
     result, data = mail.search(None, f'(SINCE "{date_since}")')
     emails = []
 

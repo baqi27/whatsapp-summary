@@ -1,10 +1,9 @@
-
 import os
 import imaplib
 import email
 import datetime
 from email.header import decode_header
-import openai
+from openai import OpenAI
 from twilio.rest import Client
 
 # === KONFIGURACJA Z .ENV ===
@@ -12,7 +11,8 @@ EMAIL = os.getenv("EMAIL")
 PASSWORD = os.getenv("PASSWORD")
 IMAP_SERVER = 'imap.gmail.com'
 
-client = openai.OpenAI()
+openai_api_key = os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=openai_api_key)
 
 MY_PHONE = os.getenv("MY_PHONE")
 PARTNER_PHONE = os.getenv("PARTNER_PHONE")

@@ -1,3 +1,4 @@
+
 import os
 import imaplib
 import email
@@ -11,7 +12,7 @@ EMAIL = os.getenv("EMAIL")
 PASSWORD = os.getenv("PASSWORD")
 IMAP_SERVER = 'imap.gmail.com'
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
+client = openai.OpenAI()
 
 MY_PHONE = os.getenv("MY_PHONE")
 PARTNER_PHONE = os.getenv("PARTNER_PHONE")
@@ -76,7 +77,7 @@ def summarize_emails(emails):
     content = "\n\n".join(
         f"FROM: {email['from']}\nSUBJECT: {email['subject']}\n{email['body']}" for email in emails
     )
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model="gpt-4o",
         messages=[
             {"role": "system", "content": "pisz po polsku. Stwórz zwięzłe podsumowanie w punktach wiadomości e-mail z ostatniego dnia."},
@@ -85,7 +86,7 @@ def summarize_emails(emails):
         temperature=0.3,
         max_tokens=500
     )
-    return response.choices[0].message['content'].strip()
+    return response.choices[0].message.content.strip()
 
 def send_sms(to, body):
     twilio_client.messages.create(

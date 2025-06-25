@@ -3,7 +3,7 @@ import imaplib
 import email
 import datetime
 from email.header import decode_header
-from openai import OpenAI
+import openai
 from twilio.rest import Client
 
 # === KONFIGURACJA Z .ENV ===
@@ -11,14 +11,20 @@ EMAIL = os.getenv("EMAIL")
 PASSWORD = os.getenv("PASSWORD")
 IMAP_SERVER = 'imap.gmail.com'
 
-openai_api_key = os.getenv("OPENAI_API_KEY")
-client = OpenAI(api_key=openai_api_key)
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if not OPENAI_API_KEY:
+    raise ValueError("Brakuje klucza OPENAI_API_KEY w środowisku!")
+
+client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
 MY_PHONE = os.getenv("MY_PHONE")
 PARTNER_PHONE = os.getenv("PARTNER_PHONE")
 TWILIO_PHONE = os.getenv("TWILIO_PHONE")
 
-twilio_client = Client(os.getenv("TWILIO_ACCOUNT_SID"), os.getenv("TWILIO_AUTH_TOKEN"))
+twilio_client = Client(
+    os.getenv("TWILIO_ACCOUNT_SID"),
+    os.getenv("TWILIO_AUTH_TOKEN")
+)
 
 FIRM_SENDERS = [
     'ksiegowa@...', 'biuro.kapiczynska@gmail.com',
@@ -74,6 +80,8 @@ def fetch_recent_emails():
     return emails
 
 def summarize_emails(emails):
+    if not emails:
+        return "Brak nowych wiadomości."
     content = "\n\n".join(
         f"FROM: {email['from']}\nSUBJECT: {email['subject']}\n{email['body']}" for email in emails
     )
@@ -89,22 +97,29 @@ def summarize_emails(emails):
     return response.choices[0].message.content.strip()
 
 def send_sms(to, body):
-    twilio_client.messages.create(
-        body=body,
-        from_=TWILIO_PHONE,
-        to=to
-    )
+    try:
+        twilio_client.messages.create(
+            body=body,
+            from_=TWILIO_PHONE,
+            to=to
+        )
+    except Exception as e:
+        print(f"Błąd przy wysyłaniu SMS-a do {to}: {e}")
 
 if __name__ == "__main__":
-    all_emails = fetch_recent_emails()
-    firm_emails = [e for e in all_emails if e['from'].lower() in FIRM_SENDERS]
-    private_emails = [e for e in all_emails if e['from'].lower() not in FIRM_SENDERS]
+    try:
+        all_emails = fetch_recent_emails()
+        firm_emails = [e for e in all_emails if e['from'].lower() in FIRM_SENDERS]
+        private_emails = [e for e in all_emails if e['from'].lower() not in FIRM_SENDERS]
 
-    if firm_emails:
-        summary_firm = summarize_emails(firm_emails)
-        send_sms(MY_PHONE, "📬 Firmowe:\n" + summary_firm)
-        send_sms(PARTNER_PHONE, "📬 Firmowe:\n" + summary_firm)
+        if firm_emails:
+            summary_firm = summarize_emails(firm_emails)
+            send_sms(MY_PHONE, "📬 Firmowe:\n" + summary_firm)
+            send_sms(PARTNER_PHONE, "📬 Firmowe:\n" + summary_firm)
 
-    if private_emails:
-        summary_private = summarize_emails(private_emails)
-        send_sms(MY_PHONE, "📥 Prywatne:\n" + summary_private)
+        if private_emails:
+            summary_private = summarize_emails(private_emails)
+            send_sms(MY_PHONE, "📥 Prywatne:\n" + summary_private)
+    except Exception as e:
+        send_sms(MY_PHONE, f"🚨 Błąd w aplikacji:\n{str(e)}")
+        print(f"Błąd krytyczny: {e}")

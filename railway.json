@@ -1,0 +1,18 @@
+{
+  "plugins": {
+    "cron": {
+      "jobs": [
+        {
+          "schedule": "30 3 * * *",
+          "command": "python3 src/main.py",
+          "name": "whatsapp_530"
+        },
+        {
+          "schedule": "0 13 * * *",
+          "command": "python3 src/main.py",
+          "name": "whatsapp_1500"
+        }
+      ]
+    }
+  }
+}

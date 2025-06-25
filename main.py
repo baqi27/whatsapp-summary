@@ -2,6 +2,7 @@ import os
 import imaplib
 import email
 import datetime
+import json
 from email.header import decode_header
 import openai
 from twilio.rest import Client
@@ -17,9 +18,9 @@ if not OPENAI_API_KEY:
 
 client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
-MY_PHONE = os.getenv("MY_PHONE")
-PARTNER_PHONE = os.getenv("PARTNER_PHONE")
-TWILIO_PHONE = os.getenv("TWILIO_PHONE")
+MY_PHONE = os.getenv("MY_PHONE")            # np. whatsapp:+48534298346
+PARTNER_PHONE = os.getenv("PARTNER_PHONE")  # np. whatsapp:+48570079082
+TWILIO_PHONE = os.getenv("TWILIO_PHONE")    # np. whatsapp:+48576113230
 
 twilio_client = Client(
     os.getenv("TWILIO_ACCOUNT_SID"),
@@ -33,6 +34,7 @@ FIRM_SENDERS = [
     'franczyza@paczkownia.com.pl', 'b2b@pelczykgroup.pl'
 ]
 
+# === DEKODOWANIE NAGŁÓWKA ===
 def decode_mime_header(header):
     decoded = decode_header(header)
     result = []
@@ -46,6 +48,7 @@ def decode_mime_header(header):
             result.append(part)
     return ''.join(result)
 
+# === POBIERANIE MAILI ===
 def fetch_recent_emails():
     mail = imaplib.IMAP4_SSL(IMAP_SERVER)
     mail.login(EMAIL, PASSWORD)
@@ -79,6 +82,7 @@ def fetch_recent_emails():
 
     return emails
 
+# === PODSUMOWANIE MAILI ===
 def summarize_emails(emails):
     if not emails:
         return "Brak nowych wiadomości."
@@ -96,16 +100,20 @@ def summarize_emails(emails):
     )
     return response.choices[0].message.content.strip()
 
-def send_sms(to, body):
+# === WYSYŁKA WHATSAPP Z SZABLONU ===
+def send_whatsapp_template(to, body):
     try:
+        content_sid = "HX98cfd8ee34f2428c8a233157dfd2d5ad"  # Twilio template: daily_summary_v2
         twilio_client.messages.create(
-            body=body,
             from_=TWILIO_PHONE,
-            to=to
+            to=to,
+            content_sid=content_sid,
+            content_variables=json.dumps({"1": body})
         )
     except Exception as e:
-        print(f"Błąd przy wysyłaniu SMS-a do {to}: {e}")
+        print(f"Błąd przy wysyłaniu WhatsAppa do {to}: {e}")
 
+# === MAIN ===
 if __name__ == "__main__":
     try:
         all_emails = fetch_recent_emails()
@@ -114,12 +122,13 @@ if __name__ == "__main__":
 
         if firm_emails:
             summary_firm = summarize_emails(firm_emails)
-            send_sms(MY_PHONE, "📬 Firmowe:\n" + summary_firm)
-            send_sms(PARTNER_PHONE, "📬 Firmowe:\n" + summary_firm)
+            send_whatsapp_template(MY_PHONE, "📬 Firmowe:\n" + summary_firm)
+            send_whatsapp_template(PARTNER_PHONE, "📬 Firmowe:\n" + summary_firm)
 
         if private_emails:
             summary_private = summarize_emails(private_emails)
-            send_sms(MY_PHONE, "📥 Prywatne:\n" + summary_private)
+            send_whatsapp_template(MY_PHONE, "📥 Prywatne:\n" + summary_private)
+
     except Exception as e:
-        send_sms(MY_PHONE, f"🚨 Błąd w aplikacji:\n{str(e)}")
+        send_whatsapp_template(MY_PHONE, f"🚨 Błąd w aplikacji:\n{str(e)}")
         print(f"Błąd krytyczny: {e}")
